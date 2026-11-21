@@ -215,7 +215,7 @@ def test_report_endpoints_and_history_not_recomputed(client, db, world, monkeypa
 def test_report_requires_api_key(client, db, world, monkeypatch):
     monkeypatch.setattr(ai_client, "is_configured", lambda: False)
     r = client.post("/api/stocks/THYAO/report")
-    assert r.status_code == 503 and "ANTHROPIC_API_KEY" in r.json()["message"]
+    assert r.status_code == 503 and ai_client.key_name() in r.json()["message"]
 
 
 def test_news_analyze_endpoint_maps_ai_errors(client, db, world, monkeypatch):

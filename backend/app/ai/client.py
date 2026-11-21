@@ -1,7 +1,10 @@
-"""Claude API istemcisi. Sadece backend'de çalışır; anahtar .env'den okunur, frontend'e gönderilmez.
+"""AI istemcisi. Sadece backend'de çalışır; anahtarlar .env'den okunur, frontend'e gönderilmez.
 
-- Yapılandırılmış çıktı: client.beta.messages.parse(output_format=PydanticModel) → doğrulanmış nesne
-- Reddedilen isteklerde sunucu tarafı yedek model (fallbacks="default")
+Sağlayıcı .env → AI_PROVIDER ile seçilir: "gemini" (Google Gemini) veya "anthropic" (Claude).
+Her iki sağlayıcı da aynı arayüzü kullanır: structured(system, user, şema) → doğrulanmış Pydantic nesnesi.
+
+- Claude: client.beta.messages.parse(output_format=...) ; reddedilen isteklerde sunucu tarafı yedek model
+- Gemini: client.interactions.create(response_format=JSON şema) ; çıktı Pydantic ile doğrulanır
 - Bütün API hataları Türkçe mesajlı AIError'a çevrilir; çağıran modül çökmez
 """
 
@@ -51,12 +54,29 @@ def _client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=key.get_secret_value().strip(), timeout=300.0, max_retries=2)
 
 
+def provider() -> str:
+    return get_settings().ai_provider
+
+
 def is_configured() -> bool:
-    return get_settings().anthropic_api_key is not None
+    s = get_settings()
+    return (s.gemini_api_key if s.ai_provider == "gemini" else s.anthropic_api_key) is not None
+
+
+def key_name() -> str:
+    return "GEMINI_API_KEY" if provider() == "gemini" else "ANTHROPIC_API_KEY"
 
 
 def structured(system: str, user: str, schema: type[T], effort: str = "medium", max_tokens: int = 16000) -> tuple[T, AIMeta]:
     """Tek istek → şemaya göre doğrulanmış çıktı. Hata durumunda AIError."""
+    if provider() == "gemini":
+        from app.ai import gemini
+
+        return gemini.structured(system, user, schema, effort, max_tokens)
+    return _anthropic_structured(system, user, schema, effort, max_tokens)
+
+
+def _anthropic_structured(system: str, user: str, schema: type[T], effort: str, max_tokens: int) -> tuple[T, AIMeta]:
     model = get_settings().claude_model
     try:
         resp = _client().beta.messages.parse(

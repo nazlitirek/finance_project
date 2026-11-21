@@ -20,10 +20,10 @@ def _stock(db: Session, symbol: str) -> Stock:
 
 @router.post("/stocks/{symbol}/report")
 def create_report(symbol: str, db: Session = Depends(get_db)):
-    """Yeni AI raporu (yaklaşık 1-2 dakika). Claude API hatasında puanlar yine kaydedilir, rapor 'failed' olur."""
+    """Yeni AI raporu (yaklaşık 1-2 dakika). AI API hatasında puanlar yine kaydedilir, rapor 'failed' olur."""
     st = _stock(db, symbol)
     if not client.is_configured():
-        raise HTTPException(503, "AI raporu için ANTHROPIC_API_KEY gerekli (backend/.env).")
+        raise HTTPException(503, f"AI raporu için {client.key_name()} gerekli (backend/.env).")
     rep = report.generate(db, st)
     db.refresh(rep, ["scores"])
     return report.to_dict(rep, st.symbol)

@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     database_url: SecretStr
     test_database_url: SecretStr | None = None
 
+    # AI sağlayıcısı: "gemini" (Google) veya "anthropic" (Claude)
+    ai_provider: Literal["gemini", "anthropic"] = "gemini"
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.8-flash"
     anthropic_api_key: SecretStr | None = None
     claude_model: str = "claude-opus-5-5"
 
@@ -31,7 +35,7 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     log_level: str = "INFO"
 
-    @field_validator("anthropic_api_key", "evds_api_key", "test_database_url", mode="before")
+    @field_validator("anthropic_api_key", "gemini_api_key", "evds_api_key", "test_database_url", mode="before")
     @classmethod
     def _empty_to_none(cls, v):
         return None if v in ("", None) else v
@@ -55,7 +59,8 @@ class Settings(BaseSettings):
     def secret_values(self) -> list[str]:
         """Loglardan silinecek gizli değerler."""
         out = []
-        for s in (self.database_url, self.test_database_url, self.anthropic_api_key, self.evds_api_key):
+        for s in (self.database_url, self.test_database_url, self.anthropic_api_key, self.gemini_api_key,
+                  self.evds_api_key):
             if s is not None and s.get_secret_value():
                 out.append(s.get_secret_value())
         return out

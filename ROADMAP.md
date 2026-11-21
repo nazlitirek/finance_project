@@ -66,7 +66,7 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
   - `technical_indicators` tablosu kullanılmıyor; göstergeler her istekte fiyatlardan hesaplanıyor (~2,5 sn)
 
 ## Aşama 5 — AI entegrasyonu ✅ (canlı deneme API anahtarı bekliyor)
-- [x] Claude istemcisi sadece backend'de (`app/ai/client.py`); model `.env` → `CLAUDE_MODEL` (varsayılan `claude-opus-5-5`)
+- [x] AI istemcisi sadece backend'de (`app/ai/client.py`, `app/ai/gemini.py`); sağlayıcı ve model `.env` içinden
 - [x] Yapılandırılmış çıktı: Pydantic şemalarıyla doğrulanan JSON (`client.beta.messages.parse`)
 - [x] Reddedilen isteklerde sunucu tarafı yedek model; bütün API hataları Türkçe mesaja çevriliyor
 - [x] Haber/KAP analizi: kategori, özet, önem, yön, vade, olumlu/olumsuz etkiler, olay tarihi, kopya tespiti
@@ -77,7 +77,11 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
 - [x] Rapor + puanlar + AI'ye giden girdi (snapshot) + veri tarihleri saklanıyor; eski rapor yeniden hesaplanmıyor
 - [x] Uç noktalar: `POST /api/stocks/{kod}/report`, `POST /news/analyze`, `GET /stocks/{kod}/reports`, `GET /reports/{id}`
 - [x] **Test:** 159 test geçti (sahte AI ile): şema, puan değişmezliği, injection, yeniden deneme, hata durumu, geçmiş rapor değişmezliği
-- Tahmini maliyet: rapor başına ~0,3–0,5 USD (Opus 5.5; ~7 bin giriş, ~10-15 bin çıkış token, haber analizi dahil)
+- [x] **Sağlayıcı seçimi (22.11.2026):** Kullanıcı kararıyla varsayılan sağlayıcı **Google Gemini** (`AI_PROVIDER=gemini`, model `GEMINI_MODEL`, varsayılan `gemini-3.8-flash`). Claude desteği korunuyor (`AI_PROVIDER=anthropic`).
+- Tahmini maliyet (rapor + haber analizi, ~7 bin giriş, ~10-15 bin çıkış token):
+  - Gemini 3.8 Flash: ~0,05–0,10 USD (ücretsiz katman da var; o katmanda Google içeriği ürün geliştirmede kullanabilir)
+  - Gemini 4 Carbon (en güçlü akıl yürütme): ~0,15–0,35 USD; 1 Aralık 2026'dan sonra yaklaşık iki katı
+  - Claude Opus 5.5: ~0,3–0,5 USD
 
 ## Aşama 6 — Frontend ⏳
 - Next.js + Tailwind + shadcn/ui, koyu/açık tema

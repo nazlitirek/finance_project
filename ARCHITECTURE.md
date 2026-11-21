@@ -138,7 +138,7 @@ olur, tahmin yapılmaz; her modül puan + güvenilirlik (0-1) + puanın anlamı 
 - **Kümülatif → çeyreklik:** Gelir tablosu kalemleri kümülatif gelir; Q2 = H1 − Q1 gibi hesaplanır. Bilanço kalemlerine uygulanmaz.
 - **Sektöre göre yöntem:** Banka, sigorta ve holdingler için ayrı oran setleri. Uygun olmayan oran "uygulanamaz" olarak gösterilir.
 - **Zamanlayıcı:** APScheduler, backend süreci içinde. Ayrı bir kuyruk sistemi yok (tek kullanıcı).
-- **AI:** Claude API, yapılandırılmış JSON çıktısı. Pydantic şemasıyla doğrulanır. Haber ve KAP metinleri "güvenilmeyen veri" olarak ayrı bir blokta verilir; içindeki talimatlar uygulanmaz.
+- **AI:** Google Gemini (varsayılan) veya Claude API — `.env` → `AI_PROVIDER`. yapılandırılmış JSON çıktısı. Pydantic şemasıyla doğrulanır. Haber ve KAP metinleri "güvenilmeyen veri" olarak ayrı bir blokta verilir; içindeki talimatlar uygulanmaz.
 - **Rapor geçmişi:** Rapor, üretildiği andaki girdi verileriyle (snapshot JSON) birlikte saklanır. Eski rapor yeniden hesaplanmaz.
 
 ## 6. Verilen kararlar (21.11.2026)
