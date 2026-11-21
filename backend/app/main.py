@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
-from app.api import routes_data, routes_health, routes_stocks
+from app.api import routes_analysis, routes_data, routes_health, routes_stocks
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 
@@ -67,6 +67,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_health.router, prefix="/api")
     app.include_router(routes_stocks.router, prefix="/api")
     app.include_router(routes_data.router, prefix="/api")
+    app.include_router(routes_analysis.router, prefix="/api")
     return app
 
 

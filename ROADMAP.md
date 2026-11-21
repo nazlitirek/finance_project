@@ -45,15 +45,25 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
   - EVDS ile TCMB günlük kur dosyası aynı gün için küçük fark gösterebiliyor (ör. 20.11.2026: 50,3786 / 50,4028)
   - Yahoo adapteri yazılmadı (kaynak kapalı)
 
-## Aşama 4 — Finansal analiz motoru ⏳
-- Teknik: SMA/EMA, RSI, MACD, Stochastic, Williams %R, ROC, Bollinger, ATR, tarihsel volatilite, OBV, MFI, hacim ortalaması, VWAP (intraday varsa), destek/direnç
-- Temel: büyüme (yıllık/çeyreklik), kârlılık, nakit üretimi
-- Finansal sağlık: likidite, borçluluk, kârlılık, verimlilik oranları (formül + değer + önceki dönem + sektör)
-- Değerleme: çarpanlar, DCF (3 senaryo, tüm varsayımlar görünür)
-- Sektör karşılaştırması (aynı dönem, ortalama + medyan, yetersiz örnek uyarısı)
-- Risk: volatilite, beta, max drawdown, Sharpe, Sortino, downside deviation
-- Puanlama: 7 modül, 0-100, güvenilirlik oranı, ağırlıklar `config/` içinde
-- **Test:** bilinen örnek verilerle doğrulama; sıfıra bölme, eksik veri, negatif değer
+## Aşama 4 — Finansal analiz motoru ✅
+- [x] Teknik: SMA 20/50/100/200, EMA 9/21/50/200, RSI, MACD, Stokastik, Williams %R, ROC, Bollinger, ATR, tarihsel oynaklık, std sapma, OBV, MFI, hacim ortalaması, destek/direnç (dönüş noktalarından). VWAP gün içi veri olmadığı için yok.
+- [x] Teknik değerlendirme: trend yönü, momentum gücü, aşırı alım/satım, hacim desteği, oynaklık durumu; puan = trend %35 + momentum %30 + hacim %20 + oynaklık %15
+- [x] Temel: son 12 ay (TTM), yıllık, çeyreklik yıllık ve çeyrekten çeyreğe büyüme; kârlılık, büyüme, nakit üretimi puanı
+- [x] Finansal sağlık: likidite, borçluluk, kârlılık, verimlilik (formül + değer + bir yıl önceki değer); bankalar/sigorta için ayrı oran seti
+- [x] Değerleme: F/K, PD/DD, FD/FAVÖK, FD/Satışlar, Fiyat/Nakit akışı; DCF 3 senaryo (iyimser/baz/kötümser), bütün varsayımlar görünür
+- [x] Sektör karşılaştırması: aynı dönem, ortalama + medyan, yüzdelik konum, en az 5 şirket kuralı
+- [x] Risk: oynaklık, beta (BIST 100), maksimum düşüş, Sharpe, Sortino, aşağı yönlü sapma, ATR, borçluluk, likidite, kâr istikrarsızlığı (100 = düşük risk)
+- [x] Genel puan: ağırlıklar `config/scoring.toml`; eksik modüller normalize edilir, kapsama gösterilir
+- [x] Uç noktalar: `/api/stocks/{kod}/analysis`, `/analysis/{modül}`, `POST /peers/refresh`
+- [x] Hesaplanan oranlar `financial_ratios` tablosuna kaydediliyor
+- [x] **Test:** 139 test geçti — RSI, ATR, EMA, DCF gibi hesaplar elle hesaplanmış değerlerle doğrulandı; sıfıra bölme, eksik veri, zarar/negatif değer durumları
+- **Bilinen sınırlar:**
+  - Sektör puanı için rakiplerin finansal tablolarının çekilmesi gerekir (`POST /api/stocks/{kod}/peers/refresh`)
+  - Haber puanı Aşama 5'te (AI)
+  - Geçmiş çarpanlar için geçmiş piyasa değeri ≈ düzeltilmiş fiyat × bugünkü pay adedi (yaklaşık)
+  - DCF nominal TL ile; risksiz faiz olarak TCMB fonlama maliyeti kullanılıyor; sonuç varsayımlara çok duyarlı
+  - Sigorta şirketleri banka eşikleriyle değerlendiriliyor (özkaynak/aktif); ayrı eşik seti eklenebilir
+  - `technical_indicators` tablosu kullanılmıyor; göstergeler her istekte fiyatlardan hesaplanıyor (~2,5 sn)
 
 ## Aşama 5 — AI entegrasyonu ⏳
 - Claude istemcisi (backend), model `.env` içinden

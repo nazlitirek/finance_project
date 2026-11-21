@@ -192,10 +192,13 @@ def sync_prices_for(s: Session, isy: IsYatirimSource, symbol: str, today: date, 
 def sync_prices(s: Session, isy: IsYatirimSource, symbols: list[str], today: date | None = None) -> JobOutcome:
     today = today or date.today()
     total, failed, index_done = 0, [], set()
-    for sym in symbols:
+    for i, sym in enumerate(symbols, start=1):
+        if i % 25 == 0:
+            log.info("Fiyatlar: %d/%d hisse işlendi (%d hata)", i, len(symbols), len(failed))
         try:
             with s.begin_nested():
                 total += sync_prices_for(s, isy, sym, today, index_done)
+            s.commit()  # her hisse hemen kaydedilir; uzun işte kesinti olursa önceki hisseler kaybolmaz
         except SourceError as exc:
             failed.append(f"{sym}: {exc.message}")
     msg = f"{len(symbols) - len(failed)}/{len(symbols)} hisse güncellendi"
@@ -264,6 +267,7 @@ def sync_financials(s: Session, isy: IsYatirimSource, symbols: list[str], quarte
                 total += n
                 if n == 0:
                     empty.append(sym)
+            s.commit()
         except SourceError as exc:
             failed.append(f"{sym}: {exc.message}")
     msg = f"{len(symbols) - len(failed)}/{len(symbols)} hisse işlendi"

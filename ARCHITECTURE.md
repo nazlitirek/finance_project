@@ -112,6 +112,25 @@ class SourceAdapter(Protocol):
 - Kaynaklar `config/sources.yaml` içinde açılıp kapatılabilir.
 - Aynı veri iki kaynaktan geliyorsa ikisi de saklanır. Fark eşik üstündeyse işaretlenir.
 
+## 4.1 Analiz motoru (Aşama 4)
+
+```
+app/analysis/
+  common.py      ortak yapılar (Metric, ModuleResult), güvenli bölme, ölçekleme, ağırlıklı ortalama
+  statements.py  kalem kodu eşlemesi (sanayi / banka / sigorta), TTM, tek çeyrek, ortalama
+  technical.py   göstergeler + teknik puan
+  fundamental.py büyüme, oranlar, temel puan, finansal sağlık puanı
+  valuation.py   çarpanlar, DCF (3 senaryo), değerleme puanı
+  sector.py      aynı dönem rakip karşılaştırması
+  risk.py        piyasa ve finansal risk, risk puanı (100 = düşük risk)
+  scoring.py     genel puan (normalize edilmiş ağırlıklı ortalama)
+  service.py     veritabanından veri hazırlama, modülleri çalıştırma
+config/scoring.toml  bütün ağırlıklar ve eşikler
+```
+
+Kurallar: hesaplama fonksiyonları saftır (veritabanı yok) ve test edilir; payda sıfır/negatif ise sonuç `None`
+olur, tahmin yapılmaz; her modül puan + güvenilirlik (0-1) + puanın anlamı + notlar döndürür.
+
 ## 5. Önemli tasarım kararları
 
 - **Teknik göstergeler kendi kodumuzla** (pandas/NumPy). TA-Lib Windows'ta derleme gerektiriyor; pandas-ta'nın bakımı ve yeni NumPy desteği belirsiz. Kendi fonksiyonlarımız bilinen örnek verilerle test edilecek.

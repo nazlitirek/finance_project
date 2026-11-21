@@ -215,7 +215,7 @@ class FinancialRatio(Base):
     __table_args__ = (
         UniqueConstraint(
             "stock_id", "fiscal_year", "fiscal_period", "consolidation", "inflation_adjusted", "ratio_code",
-            name="uq_financial_ratios",
+            name="uq_financial_ratios", postgresql_nulls_not_distinct=True,
         ),
         Index("ix_financial_ratios_ratio_period", "ratio_code", "fiscal_year", "fiscal_period"),
     )
@@ -225,7 +225,7 @@ class FinancialRatio(Base):
     fiscal_year: Mapped[int] = mapped_column(SmallInteger)
     fiscal_period: Mapped[int] = mapped_column(SmallInteger)
     consolidation: Mapped[str] = mapped_column(String(15))
-    inflation_adjusted: Mapped[bool] = mapped_column(Boolean)
+    inflation_adjusted: Mapped[bool | None] = mapped_column(Boolean)  # NULL = bilinmiyor
     ratio_code: Mapped[str] = mapped_column(String(40))  # "current_ratio", "roe" ...
     value: Mapped[Decimal | None] = mapped_column(Numeric(24, 8))  # NULL = hesaplanamadı
     formula: Mapped[str] = mapped_column(String(300))

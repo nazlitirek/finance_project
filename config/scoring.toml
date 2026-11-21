@@ -1,0 +1,95 @@
+# BIST Intelligence — puanlama ayarları
+#
+# Bütün puanlar 0-100 arasıdır. Eşikler başlangıç için seçilmiş makul değerlerdir;
+# yatırım başarısını garanti etmez. Değiştirdiğinizde backend'i yeniden başlatın.
+#
+# Ölçek kuralı: [kötü, iyi] çifti verilir. Değer "kötü"de 0, "iyi"de 100 puan alır,
+# arası doğrusal, dışı 0 veya 100'e sabitlenir. kötü > iyi ise "düşük daha iyi" demektir.
+
+[overall]
+# Modül ağırlıkları (genel puan). Eksik modüller genel puanı düşürmez:
+# mevcut modüllerin ağırlıkları yeniden normalize edilir, kapsama ayrıca gösterilir.
+weights = { technical = 15, fundamental = 20, financial_health = 20, valuation = 15, sector = 10, news = 5, risk = 15 }
+strong_at = 65   # >= güçlü
+weak_below = 40  # < zayıf
+min_coverage = 0.5  # mevcut modüllerin ağırlık payı bunun altındaysa genel sınıf verilmez
+
+[technical]
+# Kategori ağırlıkları (%)
+weights = { trend = 35, momentum = 30, volume = 20, volatility = 15 }
+min_history_days = 200  # SMA 200 için
+
+[fundamental]
+# Nominal TL büyüme eşikleri (yüksek enflasyon dönemi; TMS 29 notuna bakın)
+revenue_growth = [0.0, 0.60]
+profit_growth = [-0.20, 0.80]
+net_margin = [0.0, 0.15]
+ebitda_margin = [0.0, 0.25]
+roe = [0.0, 0.30]
+ocf_to_net_profit = [0.3, 1.2]
+fcf_margin = [-0.05, 0.10]
+weights = { profitability = 35, growth = 30, cash = 25, performance = 10 }
+
+[financial_health]
+current_ratio = [0.8, 2.0]
+quick_ratio = [0.5, 1.2]
+net_debt_to_ebitda = [4.0, 0.0]
+liabilities_to_equity = [3.0, 0.8]
+interest_coverage = [1.0, 6.0]
+roe = [0.0, 0.30]
+net_margin = [0.0, 0.15]
+asset_turnover = [0.3, 1.5]
+weights = { liquidity = 25, leverage = 35, profitability = 25, efficiency = 15 }
+# Bankalar / sigorta: farklı oran seti
+bank_roe = [0.05, 0.35]
+bank_roa = [0.005, 0.03]
+bank_equity_to_assets = [0.06, 0.12]
+bank_loans_to_deposits = [1.3, 0.8]
+
+[valuation]
+min_peers = 5
+dcf_upside = [-0.5, 0.5]      # DCF baz senaryo model değeri / fiyat − 1
+weights = { multiples = 75, dcf = 25 }
+
+[dcf]
+tax_rate = 0.25               # kurumlar vergisi
+equity_risk_premium = 0.06
+debt_spread = 0.03            # borç maliyeti = risksiz faiz + fark
+long_term_risk_free = 0.15    # 5. yıla doğru risksiz faizin ineceği varsayılan seviye (nominal TL)
+nwc_to_revenue_change = 0.10  # gelir artışının işletme sermayesine bağlanan payı
+years = 5
+min_quarters = 8
+
+[dcf.scenarios.optimistic]
+revenue_growth = [0.40, 0.32, 0.26, 0.22, 0.18]
+margin_change = 0.02          # FAVÖK marjına eklenen (puan)
+wacc_change = -0.02
+terminal_growth = 0.10
+
+[dcf.scenarios.base]
+revenue_growth = [0.30, 0.25, 0.20, 0.17, 0.14]
+margin_change = 0.0
+wacc_change = 0.0
+terminal_growth = 0.08
+
+[dcf.scenarios.pessimistic]
+revenue_growth = [0.20, 0.17, 0.14, 0.12, 0.10]
+margin_change = -0.03
+wacc_change = 0.03
+terminal_growth = 0.06
+
+[sector]
+min_peers = 5
+
+[risk]
+# 100 = düşük risk, 0 = yüksek risk
+historical_volatility = [0.80, 0.25]
+beta = [1.6, 0.6]
+max_drawdown = [-0.70, -0.20]
+downside_deviation = [0.60, 0.15]
+net_debt_to_ebitda = [4.0, 0.0]
+current_ratio = [0.8, 2.0]
+avg_turnover_tl = [5_000_000, 200_000_000]
+profit_cv = [1.5, 0.3]
+lookback_days = 252
+weights = { historical_volatility = 15, beta = 10, max_drawdown = 15, downside_deviation = 10, leverage = 15, liquidity = 10, market_liquidity = 10, profit_stability = 15 }
