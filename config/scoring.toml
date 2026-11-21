@@ -93,3 +93,20 @@ avg_turnover_tl = [5_000_000, 200_000_000]
 profit_cv = [1.5, 0.3]
 lookback_days = 252
 weights = { historical_volatility = 15, beta = 10, max_drawdown = 15, downside_deviation = 10, leverage = 15, liquidity = 10, market_liquidity = 10, profit_stability = 15 }
+
+[news]
+# Haber puanı: 50 + 50 × Σ(ağırlık × yön) / Σ(ağırlık). Haber SAYISI tek başına puanı değiştirmez.
+# ağırlık = önem × ilgi × kaynak güvenilirliği × güncellik
+window_days = 90
+half_life_days = 30
+importance = { low = 1, medium = 2, high = 3 }
+relevance = { direct = 1.0, indirect = 0.5, unrelated = 0.0 }
+source_reliability = { official = 1.0, major = 0.8, other = 0.5 }
+direction = { positive = 1, negative = -1, neutral = 0, mixed = 0 }
+full_reliability_weight = 6  # toplam ağırlık bu değere ulaşınca güvenilirlik 1.0
+
+[ai]
+news_effort = "low"
+report_effort = "high"
+max_news_items = 25
+news_lookback_days = 30

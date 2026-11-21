@@ -65,12 +65,19 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
   - Sigorta şirketleri banka eşikleriyle değerlendiriliyor (özkaynak/aktif); ayrı eşik seti eklenebilir
   - `technical_indicators` tablosu kullanılmıyor; göstergeler her istekte fiyatlardan hesaplanıyor (~2,5 sn)
 
-## Aşama 5 — AI entegrasyonu ⏳
-- Claude istemcisi (backend), model `.env` içinden
-- Prompt tasarımı; haberler "güvenilmeyen veri" bloğunda
-- JSON şema + Pydantic doğrulama, hatalı çıktıda yeniden deneme
-- Haber analizi + genel rapor (kısa/orta/uzun vade)
-- **Test:** şema doğrulama, AI çıktısının hesaplanan puanları değiştirmediği
+## Aşama 5 — AI entegrasyonu ✅ (canlı deneme API anahtarı bekliyor)
+- [x] Claude istemcisi sadece backend'de (`app/ai/client.py`); model `.env` → `CLAUDE_MODEL` (varsayılan `claude-opus-5-5`)
+- [x] Yapılandırılmış çıktı: Pydantic şemalarıyla doğrulanan JSON (`client.beta.messages.parse`)
+- [x] Reddedilen isteklerde sunucu tarafı yedek model; bütün API hataları Türkçe mesaja çevriliyor
+- [x] Haber/KAP analizi: kategori, özet, önem, yön, vade, olumlu/olumsuz etkiler, olay tarihi, kopya tespiti
+- [x] Haber puanı formülle: önem × ilgi × kaynak güvenilirliği × güncellik; haber sayısı puanı şişirmez
+- [x] Prompt injection önlemi: haber metinleri `<untrusted_documents>` içinde, açılı ayraçlar temizleniyor, tespit işaretleniyor
+- [x] Genel rapor: 13 bölüm + olumlu/olumsuz faktörler, belirsizlikler, çelişkiler; her bölümde dayanılan veriler ve eksik veriler
+- [x] Kesin al/sat ve hedef fiyat ifadeleri denetleniyor; bulunursa bir kez yeniden yazdırılıyor
+- [x] Rapor + puanlar + AI'ye giden girdi (snapshot) + veri tarihleri saklanıyor; eski rapor yeniden hesaplanmıyor
+- [x] Uç noktalar: `POST /api/stocks/{kod}/report`, `POST /news/analyze`, `GET /stocks/{kod}/reports`, `GET /reports/{id}`
+- [x] **Test:** 159 test geçti (sahte AI ile): şema, puan değişmezliği, injection, yeniden deneme, hata durumu, geçmiş rapor değişmezliği
+- Tahmini maliyet: rapor başına ~0,3–0,5 USD (Opus 5.5; ~7 bin giriş, ~10-15 bin çıkış token, haber analizi dahil)
 
 ## Aşama 6 — Frontend ⏳
 - Next.js + Tailwind + shadcn/ui, koyu/açık tema

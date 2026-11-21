@@ -174,8 +174,9 @@ def analyze_stock(db: Session, stock: Stock) -> dict:
     val = valuation.analyze(f, market, prof, same_period,
                             _own_history(f, adj, market.shares, prof) if f else None)
 
-    news = technical.ModuleResult("news", None, 0.0, None, notes=["Haber ve KAP puanı AI analiziyle (Aşama 5) gelecek."],
-                                  meaning="0-100: haberlerin şirket açısından niteliği ve önemi.")
+    from app.ai import news as ai_news  # döngüsel içe aktarmayı önlemek için burada
+
+    news = ai_news.module(db, stock)  # sadece daha önce yapılmış AI değerlendirmelerini kullanır; AI çağırmaz
     results = {"technical": tech, "fundamental": fund, "financial_health": health, "valuation": val,
                "sector": sec, "news": news, "risk": rsk}
     out = {k: v.to_dict() for k, v in results.items()}
