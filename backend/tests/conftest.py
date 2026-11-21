@@ -4,15 +4,19 @@ Veritabanı testleri ayrı bir test veritabanında (TEST_DATABASE_URL) çalış�
 Her test oturumunda tablolar sıfırdan migration ile kurulur; ana veritabanına dokunulmaz.
 """
 
-import pytest
-from alembic import command
-from alembic.config import Config
-from fastapi.testclient import TestClient
-from sqlalchemy import text
-from sqlalchemy.orm import Session, sessionmaker
+import os
 
-from app.core.config import BACKEND_DIR, get_settings
-from app.db.session import get_db, make_engine
+os.environ["SCHEDULER_ENABLED"] = "false"  # testlerde arka plan işleri çalışmaz
+
+import pytest  # noqa: E402
+from alembic import command  # noqa: E402
+from alembic.config import Config
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
+from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
+
+from app.core.config import BACKEND_DIR, get_settings  # noqa: E402
+from app.db.session import get_db, make_engine  # noqa: E402
 
 
 def _test_url() -> str | None:
@@ -47,15 +51,21 @@ def db_engine():
 
 
 @pytest.fixture
-def db(db_engine) -> Session:
-    """Her test kendi transaction'ında çalışır ve sonunda geri alınır."""
+def sm(db_engine):
+    """Test transaction'ına bağlı oturum fabrikası. commit() sadece savepoint'i kapatır;
+    test sonunda her şey geri alınır."""
     conn = db_engine.connect()
     trans = conn.begin()
-    session = sessionmaker(bind=conn, join_transaction_mode="create_savepoint")()
-    yield session
-    session.close()
+    yield sessionmaker(bind=conn, join_transaction_mode="create_savepoint", expire_on_commit=False)
     trans.rollback()
     conn.close()
+
+
+@pytest.fixture
+def db(sm) -> Session:
+    session = sm()
+    yield session
+    session.close()
 
 
 @pytest.fixture

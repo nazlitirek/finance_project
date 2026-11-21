@@ -107,8 +107,11 @@ class Sector(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(160), unique=True)
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("sectors.id"))
     analysis_profile: Mapped[str] = mapped_column(String(30), default="general")
+    kap_oid: Mapped[str | None] = mapped_column(String(64), unique=True)
+    sector_no: Mapped[str | None] = mapped_column(String(40))  # KAP hiyerarşi numarası, ör. "008000.001000."
 
     stocks: Mapped[list["Stock"]] = relationship(back_populates="sector")
+    parent: Mapped["Sector | None"] = relationship(remote_side="Sector.id")
 
 
 class Stock(TimestampMixin, Base):
@@ -130,6 +133,9 @@ class Stock(TimestampMixin, Base):
     sector_id: Mapped[int | None] = mapped_column(ForeignKey("sectors.id"))
     isin: Mapped[str | None] = mapped_column(String(12))
     kap_member_oid: Mapped[str | None] = mapped_column(String(64))
+    # Ödenmiş sermaye (TL). Pay başı nominal 1 TL olduğundan pay adedine eşittir. Değerleme için.
+    paid_in_capital: Mapped[Decimal | None] = mapped_column(Amount)
+    paid_in_capital_as_of: Mapped[date | None] = mapped_column(Date)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     source_id: Mapped[int | None] = mapped_column(ForeignKey("data_sources.id"))
 
@@ -141,7 +147,7 @@ class Stock(TimestampMixin, Base):
 class StockPrice(Base):
     __tablename__ = "stock_prices"
     __table_args__ = (
-        UniqueConstraint("stock_id", "interval", "ts", "source_id", name="uq_stock_prices_bar"),
+        UniqueConstraint("stock_id", "interval", "ts", "source_id", "is_adjusted", name="uq_stock_prices_bar"),
         Index("ix_stock_prices_lookup", "stock_id", "interval", "ts"),
         _check_in("interval", ("15m", "1h", "1d"), "ck_stock_prices_interval"),
         _check_in("freshness", FRESHNESS, "ck_stock_prices_freshness"),
@@ -152,10 +158,11 @@ class StockPrice(Base):
     source_id: Mapped[int] = mapped_column(ForeignKey("data_sources.id"))
     interval: Mapped[str] = mapped_column(String(5))
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # mumun başlangıç zamanı
-    open: Mapped[Decimal | None] = mapped_column(Price)
+    open: Mapped[Decimal | None] = mapped_column(Price)  # İş Yatırım açılış fiyatı vermiyor → NULL
     high: Mapped[Decimal | None] = mapped_column(Price)
     low: Mapped[Decimal | None] = mapped_column(Price)
     close: Mapped[Decimal | None] = mapped_column(Price)
+    avg_price: Mapped[Decimal | None] = mapped_column(Price)  # ağırlıklı ortalama fiyat
     volume: Mapped[Decimal | None] = mapped_column(Volume)  # lot
     turnover: Mapped[Decimal | None] = mapped_column(Amount)  # TL işlem hacmi
     is_adjusted: Mapped[bool] = mapped_column(Boolean, default=False)  # bölünme/temettü düzeltmesi
@@ -174,10 +181,12 @@ class FinancialStatement(Base):
             "stock_id", "source_id", "statement_type", "fiscal_year", "fiscal_period",
             "consolidation", "inflation_adjusted", "item_code",
             name="uq_financial_statements_item",
+            postgresql_nulls_not_distinct=True,
         ),
         Index("ix_financial_statements_lookup", "stock_id", "fiscal_year", "fiscal_period"),
         _check_in("statement_type", ("balance", "income", "cashflow"), "ck_fs_statement_type"),
-        _check_in("consolidation", ("consolidated", "solo"), "ck_fs_consolidation"),
+        # "unknown": kaynak konsolide mi solo mu olduğunu belirtmiyor
+        _check_in("consolidation", ("consolidated", "solo", "unknown"), "ck_fs_consolidation"),
         CheckConstraint("fiscal_period IN (3, 6, 9, 12)", name="ck_fs_fiscal_period"),
     )
 
@@ -190,7 +199,9 @@ class FinancialStatement(Base):
     period_end: Mapped[date] = mapped_column(Date)
     is_cumulative: Mapped[bool] = mapped_column(Boolean)  # gelir/nakit akış: yıl başından kümülatif mi
     consolidation: Mapped[str] = mapped_column(String(15))
-    inflation_adjusted: Mapped[bool] = mapped_column(Boolean)  # TMS 29
+    # TMS 29: True = enflasyona göre düzeltilmiş, False = değil, NULL = bilinmiyor (teyit edilmedi)
+    inflation_adjusted: Mapped[bool | None] = mapped_column(Boolean)
+    inflation_basis: Mapped[str | None] = mapped_column(String(200))  # bu değerin hangi kurala dayandığı
     currency: Mapped[str] = mapped_column(String(3), default="TRY")
     item_code: Mapped[str] = mapped_column(String(40))
     item_name_tr: Mapped[str | None] = mapped_column(String(300))
@@ -238,6 +249,26 @@ class TechnicalIndicator(Base):
     value: Mapped[Decimal | None] = mapped_column(Numeric(24, 8))
     params: Mapped[dict] = mapped_column(JSONB, default=dict)
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ---------------------------------------------------------------- makroekonomi
+
+class MacroObservation(Base):
+    __tablename__ = "macro_observations"
+    __table_args__ = (
+        UniqueConstraint("source_id", "series_code", "obs_date", name="uq_macro_observations"),
+        Index("ix_macro_observations_series_date", "series_code", "obs_date"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    source_id: Mapped[int] = mapped_column(ForeignKey("data_sources.id"))
+    series_code: Mapped[str] = mapped_column(String(60))  # "TP.DK.USD.A"
+    series_name: Mapped[str] = mapped_column(String(200))
+    frequency: Mapped[str] = mapped_column(String(10))  # daily / weekly / monthly
+    obs_date: Mapped[date] = mapped_column(Date)  # aylık seride ayın ilk günü
+    value: Mapped[Decimal] = mapped_column(Numeric(24, 8))
+    unit: Mapped[str | None] = mapped_column(String(40))
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ---------------------------------------------------------------- haberler ve KAP

@@ -63,7 +63,7 @@ Testler bu bilgisayardan basit HTTP istekleriyle yapıldı.
 
 | Kaynak | Ne için | Erişim testi | Kullanım koşulları | Karar |
 |---|---|---|---|---|
-| **Yahoo Finance** (chart API) | Günlük + 15 dk fiyat, endeksler (XU100, XU030, XBANK), temettü | ✅ Çalışıyor. THYAO 3 yıl = 753 gün. 15 dk mumlar var. Temel veri uç noktası (quoteSummary) ❌ 401. | ⚠️ Yahoo koşulları "otomatik yollarla veri toplamayı" yasaklıyor. Resmî bir API değil. | Adapter var, varsayılan **kapalı** (bkz. §6). |
+| **Yahoo Finance** (chart API) | Günlük + 15 dk fiyat, endeksler (XU100, XU030, XBANK), temettü | ✅ Çalışıyor. THYAO 3 yıl = 753 gün. 15 dk mumlar var. Temel veri uç noktası (quoteSummary) ❌ 401. | ⚠️ Yahoo koşulları "otomatik yollarla veri toplamayı" yasaklıyor. Resmî bir API değil. | Kaynak kaydı var, **kapalı**; adapter yazılmadı (bkz. §6). |
 | **Stooq** | Fiyat | ❌ Tarayıcı doğrulaması (JavaScript) istiyor; CSV indirilemiyor. | — | Kullanılamaz. |
 | **KAP** | Bildirimler, şirket listesi | ✅ `POST /tr/api/disclosure/members/byCriteria` bildirim listesini JSON veriyor. Şirket listesi sayfası HTML (ayrıştırma gerekir). Resmî, belgelenmiş bir API değil. | ⚠️ Kullanım koşulları sayfası bulunamadı. KAP bilgisi kamuya açık ama otomatik erişimde düşük sıklık şart. MKK'nın resmî (kayıtlı) bir KAP veri servisi var. | Düşük sıklıkla kullanılabilir; koşullar teyit edilmeli. |
 | **İş Yatırım** (belgede yok) | Finansal tablolar (bilanço, gelir, nakit akış), günlük fiyat | ✅ JSON veriyor. THYAO çeyreklik tablolar geldi. | ⚠️ Belgelenmemiş, sitenin iç uç noktası. Koşullar sayfası bulunamadı. | **Seçildi:** fiyat (gün sonu) + finansal tablolar. |
@@ -77,6 +77,21 @@ Testler bu bilgisayardan basit HTTP istekleriyle yapıldı.
 1. **Fiyat verisi** için hem ücretsiz hem de koşulları açıkça uygun bir kaynak bulamadım. En yakın seçenekler Yahoo ve İş Yatırım; ikisi de gri alan.
 2. **15 dakikalık güncelleme:** Yahoo 15 dk mum veriyor, ama veri gecikmeli. Arayüzde her zaman "gecikmeli" etiketi gösterilecek. Hiçbir veri gerçek zamanlı gösterilmeyecek.
 3. **Temel veri:** Yahoo temel veri vermiyor. Tek pratik ücretsiz kaynak İş Yatırım (veya KAP'taki finansal tablo bildirimlerini ayrıştırmak — çok daha zor).
+
+## 3.1 Aşama 3'te doğrulanan veri ayrıntıları (21.11.2026)
+
+| Veri | Kaynak | Ayrıntı |
+|---|---|---|
+| Hisse listesi | KAP `/tr/bist-sirketler` (sayfa içi veri) | 741 şirket, 785 kod (bazı şirketlerin birden fazla pay kodu var) |
+| Sektörler | KAP `/tr/Sektorler` | 15 ana sektör, alt sektörler, 650 hisse eşleşmesi |
+| Günlük fiyat | İş Yatırım `HisseTekil` | Kapanış, en yüksek, en düşük, ağırlıklı ortalama, TL hacim. **Açılış yok.** `HGDG_*` düzeltilmiş, `HG_*` düzeltilmemiş |
+| BIST 100 | İş Yatırım (her fiyat satırında) | Sadece kapanış. XU030 / XBANK yok |
+| Finansal tablolar | İş Yatırım `MaliTablo` | Şablon `XI_29` (sanayi/hizmet) veya `UFRS` (banka/sigorta). Kalem kodu 1-2 bilanço, 3 gelir, 4 nakit akış. Tam TL, gelir/nakit akış kümülatif |
+| KAP bildirimleri | KAP `POST /tr/api/disclosure/members/byCriteria` | Haftada ~1.900 bildirim |
+| Makro | EVDS3 (`key` başlığıyla) | USD, EUR, fonlama maliyeti, TÜFE (eski seri), işsizlik |
+| Haberler | AA, Bloomberg HT, Dünya, Ekonomim RSS + Google Haberler | Başlık, özet, bağlantı |
+
+Zaman: Türkiye sabit UTC+3. Günlük fiyatlar o günün 00:00'ı (İstanbul) ile saklanır.
 
 ## 4. Veri kaynağı adapter yapısı
 

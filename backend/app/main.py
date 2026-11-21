@@ -1,6 +1,7 @@
 """BIST Intelligence backend. Çalıştırma: uvicorn app.main:app --reload (backend klasöründen)."""
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -8,18 +9,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
-from app.api import routes_health, routes_stocks
+from app.api import routes_data, routes_health, routes_stocks
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 
 log = logging.getLogger(__name__)
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    sched = None
+    if get_settings().scheduler_enabled:
+        from app.ingest import scheduler
+
+        sched = scheduler.start()
+    yield
+    if sched is not None:
+        sched.shutdown(wait=False)
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     setup_logging(settings.log_level, settings.secret_values())
 
-    app = FastAPI(title="BIST Intelligence API", version="0.1.0")
+    app = FastAPI(title="BIST Intelligence API", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -53,6 +66,7 @@ def create_app() -> FastAPI:
 
     app.include_router(routes_health.router, prefix="/api")
     app.include_router(routes_stocks.router, prefix="/api")
+    app.include_router(routes_data.router, prefix="/api")
     return app
 
 

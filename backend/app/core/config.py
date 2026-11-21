@@ -25,6 +25,9 @@ class Settings(BaseSettings):
 
     evds_api_key: SecretStr | None = None
 
+    # Arka plan veri güncellemeleri (backend çalışırken). Testlerde kapalı.
+    scheduler_enabled: bool = False
+
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     log_level: str = "INFO"
 

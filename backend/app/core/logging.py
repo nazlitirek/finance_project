@@ -29,3 +29,6 @@ def setup_logging(level: str, secrets: list[str]) -> None:
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level.upper())
+    # Her HTTP isteğini loglamasın (URL'lerde anahtar olmasa da gürültü)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)

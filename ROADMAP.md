@@ -22,16 +22,28 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
 - [x] **Test:** 28 test geçti (ayarlar, log gizleme, Türkçe arama, kısıtlar, uç noktalar, CORS). Upgrade/downgrade denendi.
 - Not: Hisse listesi henüz boş; Aşama 3'te KAP'tan doldurulacak.
 
-## Aşama 3 — Veri toplama ⏳
-- Adapter arayüzü + kaynak sağlık kontrolü
-- Hisse listesi (KAP)
-- Tarihsel fiyat (3 yıl) + 15 dk güncelleme (seçilen kaynağa göre)
-- Endeksler: XU100, XU030, XBANK
-- Finansal tablolar (seçilen kaynağa göre) + normalizasyon (birim, dönem, TMS 29, kümülatif→çeyreklik)
-- KAP bildirimleri, haber RSS (hisse kodu/adıyla eşleştirme, kopya tespiti)
-- EVDS makro seriler, TCMB kurları
-- Zamanlayıcı (APScheduler), `data_update_logs`
-- **Test:** her adapter için kayıtlı örnek yanıtlarla (internet olmadan) testler; bir kaynak çökünce diğerlerinin çalıştığı test
+## Aşama 3 — Veri toplama ✅
+- [x] Ortak HTTP katmanı: kaynak başına hız sınırı, 429/5xx'te yeniden deneme, `SourceError`
+- [x] KAP: 741 şirket / 785 hisse kodu, 15 ana + alt sektör, analiz profili (banka, sigorta, holding, GYO...)
+- [x] İş Yatırım: 3 yıllık günlük fiyat (düzeltilmiş + düzeltilmemiş), BIST 100 kapanışı, ödenmiş sermaye
+- [x] Bölünme/temettü sonrası düzeltilmiş geçmiş değişirse 3 yıl otomatik yeniden çekilir
+- [x] Finansal tablolar (son 16 çeyrek), kalem → tablo türü, kümülatif bilgisi, TMS 29 işareti, tek çeyrek hesabı
+- [x] KAP bildirimleri (hisseyle eşleştirilmiş), haber RSS (4 akış + takip edilen hisseler için Google Haberler)
+- [x] Haber ↔ hisse eşleştirme (kod / ad / arama), kopya haber tespiti
+- [x] EVDS makro seriler + TCMB günlük kurları
+- [x] Zamanlayıcı (backend çalışırken), `data_update_logs`, komut satırı (`python -m app.cli ...`)
+- [x] Uç noktalar: fiyat, son fiyat, piyasa hareketleri, finansal tablolar, KAP, haberler, makro, güncelleme logları, hisse yenileme
+- [x] **Test:** 104 test geçti (kayıtlı örneklerle, internetsiz). Canlı veriyle denendi.
+- **Bilinen sınırlar:**
+  - Açılış fiyatı yok → mum grafik tam çizilemez (Aşama 6'da çizgi/HLC grafik)
+  - Hacim TL cinsinden, lot değil
+  - XU030 ve XBANK endeks verisi yok (sadece BIST 100)
+  - Fiyatlar gün sonu; 15 dk güncelleme yok
+  - Bankalar ve sigorta şirketleri için nakit akış tablosu yok
+  - Tablonun konsolide/solo olduğu bilinmiyor; finans kuruluşlarında TMS 29 durumu "bilinmiyor"
+  - TÜFE serisi (TP.FG.J0) 2026-01'de bitiyor; yeni seri kodu bulunmalı. İşsizlik serisinin tanımı teyit edilmeli
+  - EVDS ile TCMB günlük kur dosyası aynı gün için küçük fark gösterebiliyor (ör. 20.11.2026: 50,3786 / 50,4028)
+  - Yahoo adapteri yazılmadı (kaynak kapalı)
 
 ## Aşama 4 — Finansal analiz motoru ⏳
 - Teknik: SMA/EMA, RSI, MACD, Stochastic, Williams %R, ROC, Bollinger, ATR, tarihsel volatilite, OBV, MFI, hacim ortalaması, VWAP (intraday varsa), destek/direnç
