@@ -9,7 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
-from app.api import routes_analysis, routes_data, routes_health, routes_reports, routes_stocks
+from app.api import (
+    routes_analysis,
+    routes_data,
+    routes_health,
+    routes_market,
+    routes_personal,
+    routes_reports,
+    routes_stocks,
+)
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 
@@ -46,9 +54,13 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError):
+        details = [{"field": ".".join(str(x) for x in e.get("loc", ()) if x != "body"),
+                    "message": str(e.get("msg", "")).removeprefix("Value error, ")} for e in exc.errors()]
+        first = details[0]["message"] if details else ""
         return JSONResponse(
             status_code=422,
-            content={"error": "invalid_request", "message": "İstek parametreleri geçersiz.", "details": exc.errors()},
+            content={"error": "invalid_request", "message": f"İstek parametreleri geçersiz: {first}".rstrip(": "),
+                     "details": details},
         )
 
     @app.exception_handler(OperationalError)
@@ -69,6 +81,8 @@ def create_app() -> FastAPI:
     app.include_router(routes_data.router, prefix="/api")
     app.include_router(routes_analysis.router, prefix="/api")
     app.include_router(routes_reports.router, prefix="/api")
+    app.include_router(routes_market.router, prefix="/api")
+    app.include_router(routes_personal.router, prefix="/api")
     return app
 
 

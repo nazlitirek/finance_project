@@ -96,6 +96,16 @@ def update_news(query_symbols: list[str] | None = None) -> JobResult:
     return run_job(_sm(), "rss", "news", lambda s: jobs.sync_news(s, rss(), q))
 
 
+def check_alerts() -> JobResult:
+    from app.ingest import alerts
+
+    return run_job(_sm(), "isyatirim", "alerts", alerts.check)
+
+
+def update_prices_and_alerts() -> list[JobResult]:
+    return [update_prices(), check_alerts()]
+
+
 def rematch_news() -> JobResult:
     return run_job(_sm(), "rss", "news_rematch", jobs.rematch_news)
 

@@ -24,8 +24,9 @@ SCHEDULE = [
      "Hisse listesi ve sektörler: her gün 07:30"),
     ("macro", service.update_macro, CronTrigger(hour="10,16", minute=45, timezone=TR_TZ),
      "EVDS ve TCMB kurları: her gün 10:45 ve 16:45"),
-    ("prices", service.update_prices, CronTrigger(day_of_week="mon-fri", hour=19, minute=0, timezone=TR_TZ),
-     "Bütün hisselerin gün sonu fiyatları: hafta içi 19:00"),
+    ("prices", service.update_prices_and_alerts,
+     CronTrigger(day_of_week="mon-fri", hour=19, minute=0, timezone=TR_TZ),
+     "Bütün hisselerin gün sonu fiyatları, ardından fiyat alarmları: hafta içi 19:00"),
     ("financials", service.update_financials, CronTrigger(hour=3, minute=15, timezone=TR_TZ),
      "Favori ve portföy hisselerinin finansal tabloları: her gece 03:15"),
 ]
