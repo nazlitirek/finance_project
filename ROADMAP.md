@@ -9,16 +9,18 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
 - [x] Veri kaynakları gerçek isteklerle test edildi
 - [x] Kullanım koşulları kontrol edildi (Yahoo, KAP, İş Yatırım, TÜİK, BIST)
 - [x] ARCHITECTURE.md, ROADMAP.md
-- ⛔ Açık kararlar: fiyat kaynağı, İş Yatırım, EVDS anahtarı, Git deposu (bkz. ARCHITECTURE.md §6)
+- [x] Kararlar verildi: İş Yatırım (fiyat + tablolar, gün sonu), KAP, EVDS, RSS; Yahoo kapalı (bkz. ARCHITECTURE.md §6)
+- ⏳ Kullanıcıdan: EVDS API anahtarı
 
-## Aşama 2 — Backend ve veritabanı ⏳
-- Python 3.12 sanal ortam, `requirements.txt`
-- FastAPI iskeleti, `.env` ayarları, loglama (anahtarlar loglanmaz), CORS sadece `localhost:3000`
-- PostgreSQL veritabanı + kullanıcı
-- SQLAlchemy modelleri: stocks, sectors, stock_prices, financial_statements, financial_ratios, technical_indicators, news, kap_disclosures, analysis_reports, analysis_scores, portfolio, portfolio_transactions, watchlist, price_alerts, data_sources, data_update_logs
-- Alembic ilk geçiş, indeksler (`stock_id + date`, `stock_id + period`)
-- Uç noktalar: `/health`, `/stocks`, `/stocks/search`
-- **Test:** veritabanı bağlantısı, modeller, uç noktalar
+## Aşama 2 — Backend ve veritabanı ✅
+- [x] Python 3.14 sanal ortam (`backend/.venv`), `requirements.txt` — 3.12 kurulumu bu bilgisayarda bozuk
+- [x] FastAPI iskeleti, `.env` ayarları, loglama (gizli değerler silinir), CORS sadece yerel adresler
+- [x] PostgreSQL: `bist_app` kullanıcısı, `bist_intelligence` + `bist_intelligence_test` (`scripts/setup_db.ps1`)
+- [x] SQLAlchemy modelleri: 16 tablo + `news_stocks` (haber ↔ hisse)
+- [x] Alembic ilk geçiş (`0001`): indeksler, isim araması için trigram indeksi, 6 veri kaynağı kaydı (Yahoo kapalı)
+- [x] Uç noktalar: `/api/health`, `/api/stocks`, `/api/stocks/search`, `/api/stocks/{symbol}`
+- [x] **Test:** 28 test geçti (ayarlar, log gizleme, Türkçe arama, kısıtlar, uç noktalar, CORS). Upgrade/downgrade denendi.
+- Not: Hisse listesi henüz boş; Aşama 3'te KAP'tan doldurulacak.
 
 ## Aşama 3 — Veri toplama ⏳
 - Adapter arayüzü + kaynak sağlık kontrolü

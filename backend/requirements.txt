@@ -1,0 +1,17 @@
+# Python 3.14 (3.12 kurulumu bu bilgisayarda bozuk)
+fastapi==0.165.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.4
+pydantic-settings==2.16.3
+SQLAlchemy==2.1.9
+alembic==1.20.1
+psycopg[binary]==3.3.9
+pandas==3.1.1
+numpy==2.5.5
+httpx==0.28.1
+APScheduler==3.11.3
+anthropic==2.12.0
+reportlab==5.1.0
+
+# test
+pytest==9.2.0

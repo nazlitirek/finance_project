@@ -10,7 +10,7 @@ Durum: Aşama 1 çıktısı (21.11.2026). Kod henüz yok.
 | Node.js / npm | 22.12.0 / 10.9.0 — Next.js için yeterli |
 | PostgreSQL | 18.3 kurulu, `postgresql-x64-18` servisi çalışıyor. `psql` PATH'te değil (`C:\Program Files\PostgreSQL\18\bin`). |
 | Docker | Kurulu ama çalışmıyor. Gerekli değil. |
-| Git | Kurulu. **Uyarı:** proje klasörü, `C:\Users\tirek` kökündeki bir Git deposunun içinde. Projeye ayrı bir depo açılması önerilir. |
+| Git | Kurulu. Proje kendi deposunda (`main` → GitHub). |
 
 ## 2. Genel yapı
 
@@ -63,10 +63,10 @@ Testler bu bilgisayardan basit HTTP istekleriyle yapıldı.
 
 | Kaynak | Ne için | Erişim testi | Kullanım koşulları | Karar |
 |---|---|---|---|---|
-| **Yahoo Finance** (chart API) | Günlük + 15 dk fiyat, endeksler (XU100, XU030, XBANK), temettü | ✅ Çalışıyor. THYAO 3 yıl = 753 gün. 15 dk mumlar var. Temel veri uç noktası (quoteSummary) ❌ 401. | ⚠️ Yahoo koşulları "otomatik yollarla veri toplamayı" yasaklıyor. Resmî bir API değil. | **Kararı sana bırakıyorum** (bkz. §6). |
+| **Yahoo Finance** (chart API) | Günlük + 15 dk fiyat, endeksler (XU100, XU030, XBANK), temettü | ✅ Çalışıyor. THYAO 3 yıl = 753 gün. 15 dk mumlar var. Temel veri uç noktası (quoteSummary) ❌ 401. | ⚠️ Yahoo koşulları "otomatik yollarla veri toplamayı" yasaklıyor. Resmî bir API değil. | Adapter var, varsayılan **kapalı** (bkz. §6). |
 | **Stooq** | Fiyat | ❌ Tarayıcı doğrulaması (JavaScript) istiyor; CSV indirilemiyor. | — | Kullanılamaz. |
 | **KAP** | Bildirimler, şirket listesi | ✅ `POST /tr/api/disclosure/members/byCriteria` bildirim listesini JSON veriyor. Şirket listesi sayfası HTML (ayrıştırma gerekir). Resmî, belgelenmiş bir API değil. | ⚠️ Kullanım koşulları sayfası bulunamadı. KAP bilgisi kamuya açık ama otomatik erişimde düşük sıklık şart. MKK'nın resmî (kayıtlı) bir KAP veri servisi var. | Düşük sıklıkla kullanılabilir; koşullar teyit edilmeli. |
-| **İş Yatırım** (belgede yok) | Finansal tablolar (bilanço, gelir, nakit akış), günlük fiyat | ✅ JSON veriyor. THYAO çeyreklik tablolar geldi. | ⚠️ Belgelenmemiş, sitenin iç uç noktası. Koşullar sayfası bulunamadı. | Finansal tablolar için en pratik ücretsiz yol; **onay gerekli**. |
+| **İş Yatırım** (belgede yok) | Finansal tablolar (bilanço, gelir, nakit akış), günlük fiyat | ✅ JSON veriyor. THYAO çeyreklik tablolar geldi. | ⚠️ Belgelenmemiş, sitenin iç uç noktası. Koşullar sayfası bulunamadı. | **Seçildi:** fiyat (gün sonu) + finansal tablolar. |
 | **TCMB EVDS** | Enflasyon, faiz, kur, makro | ⚠️ Yeni adres `evds3.tcmb.gov.tr`. Anahtarsız istek 403 ("key header gerekli"). Ücretsiz kayıtla anahtar alınıyor. | ✅ Resmî, ücretsiz API. | Kullanılacak. **EVDS anahtarı gerekiyor.** |
 | **TCMB kurlar** (`today.xml`) | Günlük döviz kuru | ✅ Çalışıyor. | ✅ Resmî, kamuya açık. | EVDS yedeği. |
 | **TÜİK** | Enflasyon, sanayi üretimi, büyüme | ✅ Portal açık. Veri uç noktaları tarayıcı uygulaması üzerinden; ayrıca incelenmeli. | ⚠️ robots.txt yapay zekâ botlarını (ClaudeBot vb.) engelliyor. Biz tarayıcı bot değiliz ama dikkat. Aynı göstergelerin çoğu EVDS'de de var. | Önce EVDS; TÜİK'i sonra değerlendir. |
@@ -107,12 +107,12 @@ class SourceAdapter(Protocol):
 - **AI:** Claude API, yapılandırılmış JSON çıktısı. Pydantic şemasıyla doğrulanır. Haber ve KAP metinleri "güvenilmeyen veri" olarak ayrı bir blokta verilir; içindeki talimatlar uygulanmaz.
 - **Rapor geçmişi:** Rapor, üretildiği andaki girdi verileriyle (snapshot JSON) birlikte saklanır. Eski rapor yeniden hesaplanmaz.
 
-## 6. Senin vermen gereken kararlar
+## 6. Verilen kararlar (21.11.2026)
 
-1. **Fiyat kaynağı:** Yahoo (koşullar otomatik toplamayı yasaklıyor) ve İş Yatırım (belgelenmemiş) gri alanda. Seçenekler:
-   - a) Kişisel kullanım için düşük sıklıkla Yahoo/İş Yatırım kullan, riskini kabul et.
-   - b) Ücretli/lisanslı bir veri sağlayıcı kullan (ör. aracı kurum API'si).
-   - c) Sadece günlük kapanış verisiyle yetin ve 15 dk hedefinden vazgeç.
-2. **Finansal tablolar için İş Yatırım** kullanılsın mı?
-3. **EVDS API anahtarı:** evds3.tcmb.gov.tr üzerinden ücretsiz kayıt gerekiyor.
-4. **Git:** Projeye ayrı bir depo açılsın mı (`git init`)?
+1. **Resmî ve ücretsiz kaynaklar kullanılacak:** KAP (şirket listesi, bildirimler — saatte birkaç istek), TCMB EVDS (makro), TCMB kurları (yedek), haber RSS.
+2. **Fiyat ve finansal tablolar: İş Yatırım.** Kişisel kullanım, düşük sıklık (hisse başına günde birkaç istek), veri kimseyle paylaşılmaz. Kullanım koşulları sayfası henüz bulunamadı — kullanıcı tarafından kontrol edilecek.
+3. **Güncelleme sıklığı:** İş Yatırım sadece günlük veri veriyor. 15 dk hedefi şimdilik **gün sonu** güncellemesine iner. Arayüzde "gün sonu" etiketi gösterilir.
+4. **Yahoo:** Koşulları otomatik toplamayı yasakladığı için adapter yazılacak ama **varsayılan olarak kapalı** olacak.
+5. **Uzun vadeli çözüm:** Aracı kurumun müşterilere verdiği bir veri API'si araştırılacak (15 dk fiyat için). Adapter yapısı sayesinde kaynak sonradan değiştirilebilir.
+6. **EVDS API anahtarı:** Kullanıcı evds3.tcmb.gov.tr üzerinden alacak.
+7. **Git:** Proje kendi deposunda: github.com/nazlitirek/finance_project.
