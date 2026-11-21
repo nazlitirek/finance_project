@@ -1,12 +1,15 @@
 "use client";
 
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 
 import { ErrorBox, LabelBadge, Loading, Notes, ScoreValue, Section } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { API_URL } from "@/lib/api";
 import { MODULE_TR, dateTime, pct } from "@/lib/format";
 
 type Sec = { text: string; evidence: string[]; data_gaps: string[] };
@@ -82,7 +85,16 @@ export function ReportView() {
             Finansal dönem: {data.data_as_of?.financial_period ?? "—"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {data.status === "completed" && (
+            <a
+              href={`${API_URL}/reports/${data.id}/pdf`}
+              download
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Download /> PDF indir
+            </a>
+          )}
           <ScoreValue score={data.overall_score} className="text-4xl" />
           <LabelBadge label={data.overall_label} />
         </div>

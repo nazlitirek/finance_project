@@ -101,10 +101,13 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
 - [x] **Test:** backend 183 test, frontend 7 test (biçimlendirme, API istemcisi); tip denetimi, lint, üretim derlemesi geçti; tarayıcıda gerçek veriyle denendi
 - Çalıştırma: backend `cd backend; .\.venv\Scripts\python -m uvicorn app.main:app --port 8000` · frontend `cd frontend; npm run dev` → http://localhost:3000
 
-## Aşama 7 — PDF ve rapor geçmişi ⏳
-- ReportLab ile PDF (Türkçe karakter destekli font)
-- Rapor geçmişi; eski raporlar kendi tarihli verileriyle açılır
-- **Test:** PDF üretimi, geçmiş rapor değişmezliği
+## Aşama 7 — PDF ve rapor geçmişi ✅
+- [x] PDF üretimi (ReportLab): başlık, tarih/model/veri tarihleri, modül puanları, 13 bölüm + dayanılan veriler + eksik veriler, olumlu/olumsuz faktörler, belirsizlikler, çelişkiler, kaynaklar, uyarı metni, sayfa numarası
+- [x] Yazı tipi: ReportLab ile gelen Bitstream Vera — Türkçe karakterler tam; bilgisayardaki yazı tiplerine bağlı değil
+- [x] `GET /api/reports/{id}/pdf` (saklanan rapordan üretilir, yeniden hesaplama yok); tamamlanmamış rapor → 409, PDF hatası → 500 Türkçe mesaj
+- [x] Frontend: rapor sayfasında ve hisse sayfasındaki rapor geçmişinde "PDF indir"
+- [x] Rapor geçmişi (Aşama 5-6'da): eski raporlar oluşturuldukları tarihteki verilerle açılıyor
+- [x] **Test:** 189 backend testi (PDF içeriğinde Türkçe karakter ve bölümler pypdf ile doğrulanıyor); gerçek THYAO raporu 4 sayfa, ~57 KB, 0,04 sn
 
 ## Aşama 8 — Test ve iyileştirme ⏳
 - Tüm backend/frontend testleri, finansal doğrulama

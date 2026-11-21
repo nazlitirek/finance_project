@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.ai import client, news, report
+from app.reports import pdf
 from app.db.models import AnalysisReport, Stock
 from app.db.session import get_db
 
@@ -52,11 +56,30 @@ def list_reports(symbol: str, db: Session = Depends(get_db)):
         "overall_label": r.overall_label, "error": r.error} for r in rows]}
 
 
-@router.get("/reports/{report_id}")
-def get_report(report_id: int, db: Session = Depends(get_db)):
+def _load(db: Session, report_id: int) -> dict:
     rep = db.scalar(select(AnalysisReport).options(selectinload(AnalysisReport.scores))
                     .where(AnalysisReport.id == report_id))
     if rep is None:
         raise HTTPException(404, "Rapor bulunamadı.")
     sym = db.scalar(select(Stock.symbol).where(Stock.id == rep.stock_id))
     return report.to_dict(rep, sym)
+
+
+@router.get("/reports/{report_id}")
+def get_report(report_id: int, db: Session = Depends(get_db)):
+    return _load(db, report_id)
+
+
+@router.get("/reports/{report_id}/pdf")
+def report_pdf(report_id: int, db: Session = Depends(get_db)):
+    """Saklanan raporun PDF'i (yeniden hesaplama yok)."""
+    data = jsonable_encoder(_load(db, report_id))
+    try:
+        content = pdf.build(data)
+    except pdf.PdfError as exc:
+        code = 409 if "tamamlanmış" in str(exc) else 500
+        raise HTTPException(code, str(exc)) from exc
+    name = pdf.filename(data)
+    ascii_name = name.encode("ascii", "ignore").decode() or "rapor.pdf"
+    return Response(content=content, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name)}"})

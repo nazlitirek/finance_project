@@ -16,3 +16,4 @@ reportlab==5.1.0
 
 # test
 pytest==9.2.0
+pypdf==7.1.1

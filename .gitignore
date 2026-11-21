@@ -31,3 +31,6 @@ desktop.ini
 .vscode/
 .idea/
 ~$*
+
+# Örnek / indirilen raporlar
+/*.pdf

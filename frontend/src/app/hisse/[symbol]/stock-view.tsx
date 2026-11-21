@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiDelete, apiPost } from "@/lib/api";
+import { API_URL, apiDelete, apiPost } from "@/lib/api";
 import { LABEL_TR, changeClass, date, dateTime, money, num, pct, price, signedPct } from "@/lib/format";
 
 type Stock = { symbol: string; name: string; instrument_type: string; sector: string | null };
@@ -228,6 +228,7 @@ export function StockView() {
                               <TableHead>Durum</TableHead>
                               <TableHead className="text-right">Genel puan</TableHead>
                               <TableHead>Model</TableHead>
+                              <TableHead />
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -241,6 +242,13 @@ export function StockView() {
                                   {num(r.overall_score, 1)} {r.overall_label ? `(${LABEL_TR[r.overall_label]})` : ""}
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">{r.model ?? "—"}</TableCell>
+                                <TableCell className="text-right">
+                                  {r.status === "completed" && (
+                                    <a href={`${API_URL}/reports/${r.id}/pdf`} download className="text-sm hover:underline">
+                                      PDF indir
+                                    </a>
+                                  )}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
