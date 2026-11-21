@@ -1,0 +1,118 @@
+# BIST Intelligence — Mimari
+
+Durum: Aşama 1 çıktısı (21.11.2026). Kod henüz yok.
+
+## 1. Çalışma ortamı (kontrol edildi)
+
+| Araç | Durum |
+|---|---|
+| Python | 3.14.3 (varsayılan), 3.12 ve 3.11 de kurulu. **Backend için 3.12 önerilir** — bazı kütüphanelerin (pandas-ta, TA-Lib) 3.14 desteği belirsiz. |
+| Node.js / npm | 22.12.0 / 10.9.0 — Next.js için yeterli |
+| PostgreSQL | 18.3 kurulu, `postgresql-x64-18` servisi çalışıyor. `psql` PATH'te değil (`C:\Program Files\PostgreSQL\18\bin`). |
+| Docker | Kurulu ama çalışmıyor. Gerekli değil. |
+| Git | Kurulu. **Uyarı:** proje klasörü, `C:\Users\tirek` kökündeki bir Git deposunun içinde. Projeye ayrı bir depo açılması önerilir. |
+
+## 2. Genel yapı
+
+```
+finance_project/
+├── backend/                 Python / FastAPI
+│   ├── app/
+│   │   ├── api/             HTTP uç noktaları (routes)
+│   │   ├── core/            ayarlar (.env), loglama, hata tipleri
+│   │   ├── db/              SQLAlchemy modelleri, oturum
+│   │   ├── sources/         veri kaynağı adapterleri (her kaynak ayrı dosya)
+│   │   ├── ingest/          veri toplama işleri + zamanlayıcı (15 dk)
+│   │   ├── normalize/       birim, dönem, TMS 29, kümülatif→çeyreklik
+│   │   ├── analysis/        teknik, temel, sağlık, değerleme, sektör, risk, haber
+│   │   ├── scoring/         0-100 puanlar, ağırlıklar (yapılandırılabilir)
+│   │   ├── ai/              Claude istemcisi, prompt, JSON şema doğrulama
+│   │   └── reports/         PDF üretimi
+│   ├── alembic/             veritabanı geçişleri
+│   └── tests/
+├── frontend/                Next.js / TypeScript / Tailwind / shadcn/ui
+│   └── src/ (app/, components/, lib/api.ts)
+├── config/                  puan ağırlıkları, eşikler (YAML)
+├── .env.example
+├── ARCHITECTURE.md
+└── ROADMAP.md
+```
+
+Veri akışı:
+
+```
+Kaynaklar ──► sources/ (adapter) ──► normalize/ ──► PostgreSQL
+                                                     │
+                                  analysis/ + scoring/ (saf Python fonksiyonları)
+                                                     │
+                                  ai/ (Claude sadece yorumlar) ──► reports/ (PDF)
+                                                     │
+                                    FastAPI ──► Next.js (localhost)
+```
+
+Temel kurallar:
+- Frontend sadece kendi backend'imize bağlanır. API anahtarları yalnızca backend `.env` dosyasında.
+- Her hesaplama, test edilebilen saf bir Python fonksiyonudur. Claude hiçbir hesap yapmaz.
+- Bir modül veya kaynak hata verirse diğerleri çalışmaya devam eder.
+- Her veri satırı: `source`, `fetched_at`, `as_of` (verinin ait olduğu zaman), `freshness` (`realtime` / `delayed` / `historical` / `end_of_day`).
+- Eksik veri doldurulmaz; `NULL` kalır ve puanın güvenilirliği düşer.
+
+## 3. Veri kaynakları — test sonuçları (21.11.2026)
+
+Testler bu bilgisayardan basit HTTP istekleriyle yapıldı.
+
+| Kaynak | Ne için | Erişim testi | Kullanım koşulları | Karar |
+|---|---|---|---|---|
+| **Yahoo Finance** (chart API) | Günlük + 15 dk fiyat, endeksler (XU100, XU030, XBANK), temettü | ✅ Çalışıyor. THYAO 3 yıl = 753 gün. 15 dk mumlar var. Temel veri uç noktası (quoteSummary) ❌ 401. | ⚠️ Yahoo koşulları "otomatik yollarla veri toplamayı" yasaklıyor. Resmî bir API değil. | **Kararı sana bırakıyorum** (bkz. §6). |
+| **Stooq** | Fiyat | ❌ Tarayıcı doğrulaması (JavaScript) istiyor; CSV indirilemiyor. | — | Kullanılamaz. |
+| **KAP** | Bildirimler, şirket listesi | ✅ `POST /tr/api/disclosure/members/byCriteria` bildirim listesini JSON veriyor. Şirket listesi sayfası HTML (ayrıştırma gerekir). Resmî, belgelenmiş bir API değil. | ⚠️ Kullanım koşulları sayfası bulunamadı. KAP bilgisi kamuya açık ama otomatik erişimde düşük sıklık şart. MKK'nın resmî (kayıtlı) bir KAP veri servisi var. | Düşük sıklıkla kullanılabilir; koşullar teyit edilmeli. |
+| **İş Yatırım** (belgede yok) | Finansal tablolar (bilanço, gelir, nakit akış), günlük fiyat | ✅ JSON veriyor. THYAO çeyreklik tablolar geldi. | ⚠️ Belgelenmemiş, sitenin iç uç noktası. Koşullar sayfası bulunamadı. | Finansal tablolar için en pratik ücretsiz yol; **onay gerekli**. |
+| **TCMB EVDS** | Enflasyon, faiz, kur, makro | ⚠️ Yeni adres `evds3.tcmb.gov.tr`. Anahtarsız istek 403 ("key header gerekli"). Ücretsiz kayıtla anahtar alınıyor. | ✅ Resmî, ücretsiz API. | Kullanılacak. **EVDS anahtarı gerekiyor.** |
+| **TCMB kurlar** (`today.xml`) | Günlük döviz kuru | ✅ Çalışıyor. | ✅ Resmî, kamuya açık. | EVDS yedeği. |
+| **TÜİK** | Enflasyon, sanayi üretimi, büyüme | ✅ Portal açık. Veri uç noktaları tarayıcı uygulaması üzerinden; ayrıca incelenmeli. | ⚠️ robots.txt yapay zekâ botlarını (ClaudeBot vb.) engelliyor. Biz tarayıcı bot değiliz ama dikkat. Aynı göstergelerin çoğu EVDS'de de var. | Önce EVDS; TÜİK'i sonra değerlendir. |
+| **Borsa İstanbul** | Resmî fiyat/endeks | ✅ Site açık, robots.txt her şeye izin veriyor. | ⚠️ Gerçek zamanlı ve gecikmeli veri yayını lisansa tabi. Ücretsiz makine erişimi yok. | Sadece referans bilgi (endeks listesi, şirket bilgisi). |
+| **Haber RSS** | Haber | ✅ AA Ekonomi, BloombergHT, Dünya, Ekonomim, Google News (hisse koduyla arama) çalışıyor. | ✅ RSS kişisel okuma için yayınlanır. Haber metninin tamamı saklanmaz; başlık + özet + bağlantı. | Kullanılacak. |
+
+### Önemli sonuçlar
+1. **Fiyat verisi** için hem ücretsiz hem de koşulları açıkça uygun bir kaynak bulamadım. En yakın seçenekler Yahoo ve İş Yatırım; ikisi de gri alan.
+2. **15 dakikalık güncelleme:** Yahoo 15 dk mum veriyor, ama veri gecikmeli. Arayüzde her zaman "gecikmeli" etiketi gösterilecek. Hiçbir veri gerçek zamanlı gösterilmeyecek.
+3. **Temel veri:** Yahoo temel veri vermiyor. Tek pratik ücretsiz kaynak İş Yatırım (veya KAP'taki finansal tablo bildirimlerini ayrıştırmak — çok daha zor).
+
+## 4. Veri kaynağı adapter yapısı
+
+```python
+class SourceAdapter(Protocol):
+    name: str                       # "yahoo", "kap", "evds" ...
+    freshness: Freshness            # delayed / end_of_day / historical
+    def health(self) -> SourceHealth
+    # sadece desteklediği yöntemleri uygular:
+    def prices(self, symbol, start, end, interval) -> PriceFrame
+    def financials(self, symbol, period) -> list[StatementRow]
+    def disclosures(self, since) -> list[Disclosure]
+    def macro(self, series, start, end) -> SeriesFrame
+```
+
+- Her adapter kendi hız sınırına (rate limit) ve yeniden deneme kuralına sahip.
+- Her çağrı `data_update_logs` tablosuna yazılır (başarı/hata, süre, satır sayısı).
+- Kaynaklar `config/sources.yaml` içinde açılıp kapatılabilir.
+- Aynı veri iki kaynaktan geliyorsa ikisi de saklanır. Fark eşik üstündeyse işaretlenir.
+
+## 5. Önemli tasarım kararları
+
+- **Teknik göstergeler kendi kodumuzla** (pandas/NumPy). TA-Lib Windows'ta derleme gerektiriyor; pandas-ta'nın bakımı ve yeni NumPy desteği belirsiz. Kendi fonksiyonlarımız bilinen örnek verilerle test edilecek.
+- **TMS 29:** Finansal tablolarda `inflation_adjusted` alanı tutulur. Düzeltilmiş ve düzeltilmemiş tablolar asla aynı hesapta karışmaz.
+- **Kümülatif → çeyreklik:** Gelir tablosu kalemleri kümülatif gelir; Q2 = H1 − Q1 gibi hesaplanır. Bilanço kalemlerine uygulanmaz.
+- **Sektöre göre yöntem:** Banka, sigorta ve holdingler için ayrı oran setleri. Uygun olmayan oran "uygulanamaz" olarak gösterilir.
+- **Zamanlayıcı:** APScheduler, backend süreci içinde. Ayrı bir kuyruk sistemi yok (tek kullanıcı).
+- **AI:** Claude API, yapılandırılmış JSON çıktısı. Pydantic şemasıyla doğrulanır. Haber ve KAP metinleri "güvenilmeyen veri" olarak ayrı bir blokta verilir; içindeki talimatlar uygulanmaz.
+- **Rapor geçmişi:** Rapor, üretildiği andaki girdi verileriyle (snapshot JSON) birlikte saklanır. Eski rapor yeniden hesaplanmaz.
+
+## 6. Senin vermen gereken kararlar
+
+1. **Fiyat kaynağı:** Yahoo (koşullar otomatik toplamayı yasaklıyor) ve İş Yatırım (belgelenmemiş) gri alanda. Seçenekler:
+   - a) Kişisel kullanım için düşük sıklıkla Yahoo/İş Yatırım kullan, riskini kabul et.
+   - b) Ücretli/lisanslı bir veri sağlayıcı kullan (ör. aracı kurum API'si).
+   - c) Sadece günlük kapanış verisiyle yetin ve 15 dk hedefinden vazgeç.
+2. **Finansal tablolar için İş Yatırım** kullanılsın mı?
+3. **EVDS API anahtarı:** evds3.tcmb.gov.tr üzerinden ücretsiz kayıt gerekiyor.
+4. **Git:** Projeye ayrı bir depo açılsın mı (`git init`)?
