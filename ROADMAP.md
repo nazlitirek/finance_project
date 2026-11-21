@@ -87,12 +87,19 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
   78 kanıt sayısının tamamı girdide doğrulandı. Süre ~4 dk; token: ~18 bin giriş / ~15 bin çıkış → yaklaşık 0,07 USD.
 - **Test:** 172 test geçti
 
-## Aşama 6 — Frontend ⏳
-- Next.js + Tailwind + shadcn/ui, koyu/açık tema
-- Dashboard, arama, hisse detay (mum grafik + göstergeler), analiz sekmeleri
-- Karşılaştırma, favoriler, portföy, fiyat alarmları (uygulama içi + tarayıcı bildirimi)
-- Her veride kaynak + güncelleme zamanı + "gecikmeli" etiketi
-- **Test:** bileşen testleri, API istemcisi
+## Aşama 6 — Frontend ✅
+- [x] Next.js 16 + React 19 + TypeScript + Tailwind 4 + shadcn/ui (Base UI) + SWR; koyu/açık tema
+- [x] Piyasa özeti: BIST 100 (BIST 30 / Banka için "veri yok"), yükselen/düşen/hacim, son KAP, son haberler, favoriler, kaynak durumu
+- [x] Hisse arama (kod veya ad, Türkçe karakterden bağımsız), klavye ile seçim
+- [x] Hisse sayfası: fiyat, değişim, hacim, veri tarihi; grafik (1H–3Y; 1G için gün içi veri yok mesajı), SMA/EMA/Bollinger katmanları, TL hacim
+- [x] Grafik türü: açılış fiyatı olmadığı için kapanış çizgisi + gün içi en yüksek/en düşük bandı (mum grafik yok)
+- [x] Analiz sekmeleri: teknik, temel, finansal sağlık (formül ipucu), değerleme + DCF 3 senaryo, sektör (rakip verisini çek), haber/KAP (AI ile değerlendir), risk, finansal tablolar, rapor geçmişi
+- [x] AI rapor sayfası (puanlar, 13 bölüm, dayanılan veriler, eksik veriler, denetim uyarıları)
+- [x] Karşılaştırma (2-5 hisse), favoriler, portföy (ağırlıklı ortalama maliyet, gerçekleşen/gerçekleşmemiş K/Z), fiyat alarmları
+- [x] Alarm bildirimleri: uygulama içi + tarayıcı bildirimi (sekme ve backend açıkken, dakikada bir kontrol)
+- [x] Backend: favoriler, portföy, alarmlar, grafik, karşılaştırma, piyasa özeti uç noktaları; doğrulama hataları Türkçe mesajla
+- [x] **Test:** backend 183 test, frontend 7 test (biçimlendirme, API istemcisi); tip denetimi, lint, üretim derlemesi geçti; tarayıcıda gerçek veriyle denendi
+- Çalıştırma: backend `cd backend; .\.venv\Scripts\python -m uvicorn app.main:app --port 8000` · frontend `cd frontend; npm run dev` → http://localhost:3000
 
 ## Aşama 7 — PDF ve rapor geçmişi ⏳
 - ReportLab ile PDF (Türkçe karakter destekli font)
