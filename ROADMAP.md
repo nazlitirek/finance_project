@@ -65,7 +65,7 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
   - Sigorta şirketleri banka eşikleriyle değerlendiriliyor (özkaynak/aktif); ayrı eşik seti eklenebilir
   - `technical_indicators` tablosu kullanılmıyor; göstergeler her istekte fiyatlardan hesaplanıyor (~2,5 sn)
 
-## Aşama 5 — AI entegrasyonu ✅ (canlı deneme API anahtarı bekliyor)
+## Aşama 5 — AI entegrasyonu ✅
 - [x] AI istemcisi sadece backend'de (`app/ai/client.py`, `app/ai/gemini.py`); sağlayıcı ve model `.env` içinden
 - [x] Yapılandırılmış çıktı: Pydantic şemalarıyla doğrulanan JSON (`client.beta.messages.parse`)
 - [x] Reddedilen isteklerde sunucu tarafı yedek model; bütün API hataları Türkçe mesaja çevriliyor
@@ -82,6 +82,10 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
   - Gemini 3.8 Flash: ~0,05–0,10 USD (ücretsiz katman da var; o katmanda Google içeriği ürün geliştirmede kullanabilir)
   - Gemini 4 Carbon (en güçlü akıl yürütme): ~0,15–0,35 USD; 1 Aralık 2026'dan sonra yaklaşık iki katı
   - Claude Opus 5.5: ~0,3–0,5 USD
+- [x] Rapordaki "evidence" sayıları otomatik denetleniyor: girdide karşılığı olmayan sayı `unverified_evidence` listesine yazılır
+- [x] **Canlı deneme (22.11.2026, THYAO, gemini-3.8-flash):** 18 haber analiz edildi (injection yok), rapor tamamlandı, yasaklı ifade yok,
+  78 kanıt sayısının tamamı girdide doğrulandı. Süre ~4 dk; token: ~18 bin giriş / ~15 bin çıkış → yaklaşık 0,07 USD.
+- **Test:** 172 test geçti
 
 ## Aşama 6 — Frontend ⏳
 - Next.js + Tailwind + shadcn/ui, koyu/açık tema

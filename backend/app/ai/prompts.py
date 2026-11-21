@@ -50,7 +50,9 @@ Temel kurallar:
     değerleme, sektör, haber akışı) ve uzun vade (finansal sürdürülebilirlik, kârlılık istikrarı, borçluluk,
     nakit üretimi, uzun dönem büyüme) değerlendirmelerini ayrı yaz. Rekabet avantajı hakkında girdide veri yoksa
     bunu eksik veri olarak belirt.
-11. Sade, anlaşılır Türkçe kullan; teknik terimleri kısaca açıkla. Gereksiz tekrar yapma."""
+11. Sade, anlaşılır Türkçe kullan; teknik terimleri kısaca açıkla. Gereksiz tekrar yapma.
+12. Metin içinde büyük tutarları okunur yaz (ör. "1.478 milyar TL", "146,2 milyar TL"). "evidence" alanında ise
+    değeri girdideki sayıyla aynı yaz (ör. "revenue (ttm): 1478000000000 (2026/09)")."""
 
 _ANGLE = re.compile(r"[<>]")
 _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")

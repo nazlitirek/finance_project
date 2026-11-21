@@ -10,12 +10,13 @@ Akış:
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app.ai import client, news, prompts
-from app.ai.schemas import AiReport
+from app.ai.schemas import AiReport, Section
 from app.analysis import service as analysis
 from app.analysis.common import config
 from app.db.models import AnalysisReport, AnalysisScore, Stock
@@ -86,6 +87,49 @@ def build_snapshot(result: dict, news_items: list[dict]) -> dict:
     })
 
 
+_NUM = re.compile(r"-?\d+(?:\.\d+)?")
+_PARAMS = {9.0, 12.0, 14.0, 20.0, 21.0, 50.0, 100.0, 200.0}  # gösterge parametreleri (RSI 14, SMA 50 ...)
+
+
+def unverified_evidence(r: AiReport, snapshot: dict) -> list[str]:
+    """Raporun 'evidence' alanlarındaki sayıların girdi verisinde gerçekten bulunduğunu denetler.
+    Girdide karşılığı olmayan (uydurulmuş olabilecek) ifadeleri döndürür. Oranlar yüzde olarak da kabul edilir."""
+    known: list[float] = []
+
+    def walk(x):
+        if isinstance(x, bool):
+            return
+        if isinstance(x, (int, float)):
+            known.append(float(x))
+        elif isinstance(x, dict):
+            for v in x.values():
+                walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+
+    walk(snapshot)
+
+    def found(v: float) -> bool:
+        for s in known:
+            for c in (s, s * 100):
+                if c == v or (c and abs(v - c) / abs(c) < 0.006):
+                    return True
+        return False
+
+    out = []
+    for name in AiReport.model_fields:
+        sec = getattr(r, name)
+        if not isinstance(sec, Section):
+            continue
+        for e in sec.evidence:
+            core = re.sub(r"\([^)]*\)", "", e)  # parantez içindeki tarih/dönem
+            nums = [float(m) for m in _NUM.findall(core.replace(",", ""))]
+            if any(n not in _PARAMS and not found(n) for n in nums):
+                out.append(f"{name}: {e}")
+    return out
+
+
 def _texts(r: AiReport) -> list[str]:
     out = []
     for name in AiReport.model_fields:
@@ -145,7 +189,7 @@ def generate(db: Session, stock: Stock) -> AnalysisReport:
             attempts.append(meta.to_dict())
             violations = prompts.policy_violations(_texts(parsed))
         rep.report = {**parsed.model_dump(), "policy_warnings": violations, "news_step": news_step,
-                      "ai": attempts}
+                      "unverified_evidence": unverified_evidence(parsed, snapshot), "ai": attempts}
         rep.model = meta.model
         rep.status = "completed"
     except client.AIError as exc:

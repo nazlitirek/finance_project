@@ -89,7 +89,7 @@ def test_report_schema_has_no_score_fields():
 # ---------------------------------------------------------------- sahte AI
 
 def section(text="Değerlendirme."):
-    return Section(text=text, evidence=["RSI 14: 60 (2026-11-20)"], data_gaps=[])
+    return Section(text=text, evidence=["RSI 14 aşırı alım bölgesinde (2026-11-20)"], data_gaps=[])
 
 
 def fake_report(text="Teknik görünüm olumlu."):
@@ -224,3 +224,14 @@ def test_news_analyze_endpoint_maps_ai_errors(client, db, world, monkeypatch):
     monkeypatch.setattr(ai_client, "structured", boom)
     r = client.post("/api/stocks/THYAO/news/analyze")
     assert r.status_code == 503 and "limit" in r.json()["message"]
+
+
+def test_unverified_evidence_flags_invented_numbers():
+    snap = {"modules": {"technical": {"metrics": [{"code": "rsi_14", "value": 74.05}]},
+                        "health": {"metrics": [{"code": "roe", "value": 0.1478}]}}}
+    good = fake_report()
+    good.technical.evidence = ["rsi_14: 74.05 (2026-11-20)", "roe: 14.78 (2026/09)", "SMA 200 üzerinde"]
+    assert report.unverified_evidence(good, snap) == []
+    bad = fake_report()
+    bad.valuation.evidence = ["hedef değer: 999.5 (2026/09)"]
+    assert report.unverified_evidence(bad, snap) == ["valuation: hedef değer: 999.5 (2026/09)"]
