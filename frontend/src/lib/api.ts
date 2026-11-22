@@ -1,6 +1,6 @@
 // Backend API istemcisi. Frontend sadece kendi backend'imize bağlanır; veri sağlayıcılara veya AI API'ye değil.
 
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api").replace(/\/$/, "");
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api").replace(/\/$/, "");
 
 export class ApiError extends Error {
   status: number;
@@ -34,7 +34,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
     });
   } catch {
-    throw new ApiError("Backend'e bağlanılamadı. Backend'in çalıştığından emin olun (localhost:8000).", 0);
+    throw new ApiError("Backend'e bağlanılamadı. Backend'in çalıştığından emin olun (127.0.0.1:8000).", 0);
   }
   return handle<T>(res);
 }

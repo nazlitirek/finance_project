@@ -33,6 +33,7 @@ type Stock = { symbol: string; name: string; instrument_type: string; sector: st
 type Quote = {
   price: number | null; as_of?: string; previous_close?: number | null; change?: number | null; change_pct?: number | null;
   turnover?: number | null; fetched_at?: string; note?: string; message?: string;
+  stale?: boolean; stale_message?: string | null;
 };
 type Reports = { items: { id: number; created_at: string; status: string; model: string | null; overall_score: number | null; overall_label: string | null; error: string | null }[] };
 
@@ -90,6 +91,11 @@ export function StockView() {
             <Freshness date={q?.as_of ? date(q.as_of) : null} />
             <span>Son veri güncellemesi: {dateTime(q?.fetched_at)}</span>
           </div>
+          {q?.stale && (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-700 dark:text-amber-300">
+              {q.stale_message}
+            </p>
+          )}
         </div>
         {isEquity && (
           <div className="flex flex-wrap gap-2">

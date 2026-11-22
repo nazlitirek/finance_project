@@ -3,6 +3,8 @@
 from collections import defaultdict
 from datetime import date, timedelta
 
+import numpy as np
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import and_, desc, func, select
@@ -78,28 +80,47 @@ def quote(symbol: str, db: Session = Depends(get_db)):
         return {"symbol": st.symbol, "name": st.name, "price": None, "message": "Fiyat verisi yok."}
     cur, prev = rows[0], (rows[1] if len(rows) > 1 else None)
     change = (cur.close - prev.close) if prev and prev.close and cur.close else None
+    stale, gap = staleness(cur.ts.date())
     return {
         "symbol": st.symbol, "name": st.name, "price": _f(cur.close), "as_of": cur.ts.date().isoformat(),
         "previous_close": _f(prev.close) if prev else None,
         "change": _f(change), "change_pct": _f(change / prev.close * 100) if change is not None else None,
         "turnover": _f(cur.turnover), "freshness": "end_of_day", "source": "isyatirim",
         "fetched_at": cur.fetched_at, "note": "Son bilinen gün sonu fiyatı. Gerçek zamanlı değildir.",
+        "stale": stale, "business_days_old": gap,
+        "stale_message": (f"Fiyat {gap} iş günü eski. Hisse işleme kapalı olabilir veya günlük güncelleme "
+                          "çalışmamış olabilir.") if stale else None,
     }
+
+
+STALE_AFTER_BUSINESS_DAYS = 3
+
+
+def staleness(as_of: date, today: date | None = None) -> tuple[bool, int]:
+    """Son kapanıştan bu yana geçen iş günü (hafta sonu hariç; resmî tatiller hesaba katılmaz)."""
+    today = today or date.today()
+    gap = int(np.busday_count(as_of, today)) - 1 if today > as_of else 0
+    gap = max(gap, 0)
+    return gap > STALE_AFTER_BUSINESS_DAYS, gap
 
 
 @router.get("/market/movers")
 def movers(limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
     """Son işlem gününde en çok yükselen / düşen / en yüksek hacimli hisseler (düzeltilmemiş kapanış)."""
-    last_day = db.scalar(select(func.max(StockPrice.ts)).join(Stock).where(Stock.instrument_type == "equity"))
+    # Düzeltilmiş (is_adjusted) satırlar sadece hisselerde var → endeksleri ayırmak için birleştirme gerekmez,
+    # sorgu ix_stock_prices_day indeksinden okunur.
+    day = select(func.max(StockPrice.ts)).where(StockPrice.interval == "1d", StockPrice.is_adjusted.is_(True))
+    last_day = db.scalar(day)
     if last_day is None:
         return {"as_of": None, "gainers": [], "losers": [], "turnover": [], "coverage": 0,
                 "message": "Henüz fiyat verisi yok."}
-    prev_day = db.scalar(select(func.max(StockPrice.ts)).join(Stock).where(
-        Stock.instrument_type == "equity", StockPrice.ts < last_day))
+    prev_day = db.scalar(day.where(StockPrice.ts < last_day))
     cur = (select(StockPrice.stock_id, StockPrice.close, StockPrice.turnover)
-           .where(StockPrice.ts == last_day, StockPrice.is_adjusted.is_(False)).subquery())
+           .where(StockPrice.interval == "1d", StockPrice.ts == last_day, StockPrice.is_adjusted.is_(False))
+           .subquery())
     prev = (select(StockPrice.stock_id, StockPrice.close.label("prev_close"))
-            .where(StockPrice.ts == prev_day, StockPrice.is_adjusted.is_(False)).subquery())
+            .where(StockPrice.interval == "1d", StockPrice.ts == prev_day, StockPrice.is_adjusted.is_(False))
+            .subquery())
     rows = db.execute(select(Stock.symbol, Stock.name, cur.c.close, prev.c.prev_close, cur.c.turnover)
                       .join(cur, cur.c.stock_id == Stock.id).join(prev, prev.c.stock_id == Stock.id)
                       .where(Stock.instrument_type == "equity")).all()

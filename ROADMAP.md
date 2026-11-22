@@ -109,10 +109,15 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
 - [x] Rapor geçmişi (Aşama 5-6'da): eski raporlar oluşturuldukları tarihteki verilerle açılıyor
 - [x] **Test:** 189 backend testi (PDF içeriğinde Türkçe karakter ve bölümler pypdf ile doğrulanıyor); gerçek THYAO raporu 4 sayfa, ~57 KB, 0,04 sn
 
-## Aşama 8 — Test ve iyileştirme ⏳
-- Tüm backend/frontend testleri, finansal doğrulama
-- Performans (sorgu süreleri, önbellek)
-- Hata senaryoları: kaynak kapalı, API limiti, Claude hatası, PDF hatası, PostgreSQL bağlantı hatası
+## Aşama 8 — Test ve iyileştirme ✅
+- [x] **Kapsam:** backend 207 test, kod kapsamı %93 (önce %89); frontend 13 test (biçimlendirme, API istemcisi, arama kutusu, puan tablosu, ortak bileşenler)
+- [x] **Hız (gerçek veriyle, yerel):** sağlık 16 ms · arama 5 ms · son fiyat 5 ms · grafik 35 ms · tam analiz ~140 ms · 3 hisse karşılaştırma ~400 ms · rapor 17 ms · PDF 32 ms
+- [x] Piyasa özeti / hareketliler: yeni indeks (`ix_stock_prices_day`, migration 0004) → ~185 ms'den ~15 ms'ye
+- [x] Windows'ta "localhost" önce IPv6 denendiği için her istekte ~2 sn gecikme vardı → frontend backend'e `127.0.0.1` ile bağlanıyor
+- [x] Hata senaryoları test edildi: veri kaynağına erişilememe, API limiti, eksik finansal tablo, yanlış hisse kodu, bozuk/beklenmeyen yanıt, Claude/Gemini hatası ve reddi, PDF hatası, **PostgreSQL bağlantısının kopması** (bütün uç noktalar 503 + Türkçe mesaj)
+- [x] **Eski fiyat uyarısı:** son kapanış 3 iş gününden eskiyse hisse sayfasında uyarı (işleme kapalı hisse veya çalışmayan güncelleme)
+- [x] Komut satırı, zamanlayıcı ve kaynak adapterlerinin HTTP yolları test kapsamına alındı
+- Bilinen: eski fiyat hesabı resmî tatilleri bilmiyor (bayram sonrası yanlış uyarı verebilir)
 
 ## Aşama 9 — Yerel çalıştırma ⏳
 - README: kurulum, `.env.example`, PostgreSQL kurulumu

@@ -149,6 +149,8 @@ class StockPrice(Base):
     __table_args__ = (
         UniqueConstraint("stock_id", "interval", "ts", "source_id", "is_adjusted", name="uq_stock_prices_bar"),
         Index("ix_stock_prices_lookup", "stock_id", "interval", "ts"),
+        # "son işlem günü" sorguları (piyasa özeti) tüm tabloyu taramasın
+        Index("ix_stock_prices_day", "interval", "is_adjusted", "ts"),
         _check_in("interval", ("15m", "1h", "1d"), "ck_stock_prices_interval"),
         _check_in("freshness", FRESHNESS, "ck_stock_prices_freshness"),
     )
