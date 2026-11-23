@@ -119,7 +119,18 @@ Durum işaretleri: ✅ bitti · 🔄 devam ediyor · ⏳ bekliyor · ⛔ karar b
 - [x] Komut satırı, zamanlayıcı ve kaynak adapterlerinin HTTP yolları test kapsamına alındı
 - Bilinen: eski fiyat hesabı resmî tatilleri bilmiyor (bayram sonrası yanlış uyarı verebilir)
 
-## Aşama 9 — Yerel çalıştırma ⏳
-- README: kurulum, `.env.example`, PostgreSQL kurulumu
-- Backend ve frontend başlatma komutları
-- Veri güncelleme servisinin çalıştırılması
+## Aşama 9 — Yerel çalıştırma ✅
+- [x] `README.md`: gereksinimler, kurulum adımları (backend, veritabanı, ilk veri yüklemesi, frontend), çalıştırma, güncelleme takvimi, ayarlar, testler, sorun giderme
+- [x] `start.ps1`: veritabanını günceller, backend ve frontend'i iki pencerede başlatır, tarayıcıyı açar
+- [x] `backend/scripts/setup_db.ps1`: uygulama kullanıcısı ve veritabanları (Aşama 2)
+- [x] `backend/scripts/first_load.ps1`: hisse listesi, 3 yıllık fiyatlar, makro, KAP, haberler (yarıda kalırsa devam eder)
+- [x] `.env.example` (backend ve frontend)
+- [x] **Doğrulama:** depo temiz bir klasöre klonlanıp `requirements.txt` ve `npm ci` ile sıfırdan kuruldu; backend ve frontend testleri ile üretim derlemesi orada çalıştırıldı
+
+## Genel durum
+Dokuz aşamanın tamamı bitti. Açık kalan konular:
+- Fiyatlar gün sonu (15 dk güncelleme için aracı kurum veri API'si gerekir)
+- XU030 / XBANK endeks verisi yok
+- TÜFE serisi için yeni EVDS kodu bulunmalı; işsizlik serisinin tanımı teyit edilmeli
+- İş Yatırım ve KAP kullanım koşulları teyit edilmedi
+- Eski fiyat uyarısı resmî tatilleri bilmiyor
